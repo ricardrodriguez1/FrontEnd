@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BossFightStore - Tienda de Videojuegos y Consolas</title>
+  <!-- Bootstrap 5 CSS desde CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* Solo estilos mínimos personalizados */
+    .hero-section {
+      background: linear-gradient(120deg, #0f0f0f, #222);
+      color: white;
+    }
+    .card-img-top {
+      height: 180px;
+      object-fit: cover;
+    }
+    footer {
+      background-color: #111;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero Section -->
+  <section class="hero-section py-5 text-center">
+    <div class="container">
+      <h1 class="display-5 fw-bold">BossFightStore</h1>
+      <p class="lead mb-4">Tu tienda especializada en videoconsolas, videojuegos, figuras coleccionables y componentes para PC.</p>
+      <a href="#categorias" class="btn btn-success btn-lg">Explorar Productos</a>
+    </div>
+  </section>
+
+  <!-- Product Categories -->
+  <section class="py-5" id="categorias">
+    <div class="container">
+      <h2 class="text-center mb-5 fw-bold">Nuestras Categorías</h2>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        <!-- Consolas -->
+        <div class="col">
+          <div class="card h-100 shadow-sm">
+            <img src="ps2.jpg" class="card-img-top" alt="Consolas">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">Videoconsolas</h5>
+              <p class="card-text flex-grow-1">PS5, Xbox Series X|S, Nintendo Switch y más consolas de última generación.</p>
+              <a href="#" class="btn btn-outline-dark mt-auto">Ver Catálogo</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Videojuegos -->
+        <div class="col">
+          <div class="card h-100 shadow-sm">
+            <img src="re4.jpg" class="card-img-top" alt="Videojuegos">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">Videojuegos</h5>
+              <p class="card-text flex-grow-1">Juegos nuevos, clásicos y ediciones especiales para todas las plataformas.</p>
+              <a href="#" class="btn btn-outline-dark mt-auto">Ver Catálogo</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Figuras -->
+        <div class="col">
+          <div class="card h-100 shadow-sm">
+            <img src="gogeta.jpg" class="card-img-top" alt="Figuras">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">Figuras Coleccionables</h5>
+              <p class="card-text flex-grow-1">Figuras de anime, videojuegos, Marvel, Star Wars y más.</p>
+              <a href="#" class="btn btn-outline-dark mt-auto">Ver Catálogo</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Componentes PC -->
+        <div class="col">
+          <div class="card h-100 shadow-sm">
+            <img src="4070.jpg" class="card-img-top" alt="Componentes PC">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">Componentes PC</h5>
+              <p class="card-text flex-grow-1">Tarjetas gráficas, teclados mecánicos, monitores gaming y accesorios.</p>
+              <a href="#" class="btn btn-outline-dark mt-auto">Ver Catálogo</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-4">
+    <div class="container text-center">
+      <p class="mb-1">&copy; 2025 BossFightStore. Todos los derechos reservados.</p>
+      <p class="mb-0">Frontend by Ricard Rodríguez</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS (opcional, para interactividad futura) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
