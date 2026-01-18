@@ -1,11 +1,104 @@
 // src/pages/Home.jsx
+import { useState } from 'react';
 import image1 from './ps2.jpg';   // 👈 . = misma carpeta
 import image2 from './re4.jpg';
 import image3 from './gogeta.jpg';
 import image4 from './4070.jpg';
+
 export default function Home() {
+  // Estat per controlar si la cistella està desplegada o plegada
+  const [cistella, setCistella] = useState(false);
+  // Estat per emmagatzemar els productes afegits a la cistella
+  const [productesAfegits, setProductesAfegits] = useState([]);
+
+  // Llista de productes disponibles
+  const productes = [
+    { id: 1, nom: 'Videoconsolas', preu: 499.99, imatge: image1, descripcio: 'PS5, Xbox Series X|S, Nintendo Switch y más consolas de última generación.' },
+    { id: 2, nom: 'Videojuegos', preu: 69.99, imatge: image2, descripcio: 'Juegos nuevos, clásicos y ediciones especiales para todas las plataformas.' },
+    { id: 3, nom: 'Figuras Coleccionables', preu: 89.99, imatge: image3, descripcio: 'Figuras de anime, videojuegos, Marvel, Star Wars y más.' },
+    { id: 4, nom: 'Componentes PC', preu: 599.99, imatge: image4, descripcio: 'Tarjetas gráficas, teclados mecánicos, monitores gaming y accesorios.' },
+  ];
+
+  // Funció per afegir un producte a la cistella
+  const afegirACistella = (producte) => {
+    const existeix = productesAfegits.find(p => p.id === producte.id);
+    if (existeix) {
+      // Si ja existeix, incrementem la quantitat
+      setProductesAfegits(productesAfegits.map(p =>
+        p.id === producte.id ? { ...p, quantitat: p.quantitat + 1 } : p
+      ));
+    } else {
+      // Si no existeix, l'afegim amb quantitat 1
+      setProductesAfegits([...productesAfegits, { ...producte, quantitat: 1 }]);
+    }
+  };
+
+  // Funció per eliminar un producte de la cistella
+  const eliminarDeCistella = (id) => {
+    setProductesAfegits(productesAfegits.filter(p => p.id !== id));
+  };
+
+  // Funció per calcular el total de la cistella
+  const calcularTotal = () => {
+    return productesAfegits.reduce((total, p) => total + (p.preu * p.quantitat), 0).toFixed(2);
+  };
+
+  // Funció per obtenir el nombre total d'articles
+  const totalArticles = () => {
+    return productesAfegits.reduce((total, p) => total + p.quantitat, 0);
+  };
+
   return (
     <>
+      {/* Botó flotant de la cistella */}
+      <div className="cistella-flotant" onClick={() => setCistella(!cistella)}>
+        <span className="cistella-icona">🛒</span>
+        {totalArticles() > 0 && (
+          <span className="cistella-badge">{totalArticles()}</span>
+        )}
+      </div>
+
+      {/* Panell de la cistella desplegable */}
+      <div className={`cistella-panell ${cistella ? 'oberta' : ''}`}>
+        <div className="cistella-header">
+          <h4>🛒 Cistella de Compra</h4>
+          <button className="cistella-tancar" onClick={() => setCistella(false)}>✕</button>
+        </div>
+
+        <div className="cistella-contingut">
+          {productesAfegits.length === 0 ? (
+            <p className="cistella-buida">La cistella està buida</p>
+          ) : (
+            <>
+              {productesAfegits.map((producte) => (
+                <div key={producte.id} className="cistella-item">
+                  <img src={producte.imatge} alt={producte.nom} className="cistella-item-img" />
+                  <div className="cistella-item-info">
+                    <h6>{producte.nom}</h6>
+                    <p>{producte.preu.toFixed(2)}€ x {producte.quantitat}</p>
+                  </div>
+                  <button
+                    className="cistella-item-eliminar"
+                    onClick={() => eliminarDeCistella(producte.id)}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
+              <div className="cistella-total">
+                <strong>Total: {calcularTotal()}€</strong>
+              </div>
+              <button className="btn btn-success w-100 mt-2">
+                Finalitzar Compra
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Overlay quan la cistella està oberta */}
+      {cistella && <div className="cistella-overlay" onClick={() => setCistella(false)}></div>}
+
       {/* Hero Section */}
       <section className="hero-section py-5 text-center">
         <div className="container">
@@ -24,81 +117,36 @@ export default function Home() {
         <div className="container">
           <h2 className="text-center mb-5 fw-bold">Nuestras Categorías</h2>
           <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            <div className="col">
-              <div className="card h-100 shadow-sm">
-                <img
-                  src={image1}
-                  className="card-img-top"
-                  alt="Consolas"
-                />
-                <div className="card-body d-flex flex-column">
-                  <h5 className="card-title">Videoconsolas</h5>
-                  <p className="card-text flex-grow-1">
-                    PS5, Xbox Series X|S, Nintendo Switch y más consolas de última generación.
-                  </p>
-                  <a href="#" className="btn btn-outline-dark mt-auto">
-                    Ver Catálogo
-                  </a>
+            {productes.map((producte) => (
+              <div className="col" key={producte.id}>
+                <div className="card h-100 shadow-sm">
+                  <img
+                    src={producte.imatge}
+                    className="card-img-top"
+                    alt={producte.nom}
+                  />
+                  <div className="card-body d-flex flex-column">
+                    <h5 className="card-title">{producte.nom}</h5>
+                    <p className="card-text flex-grow-1">
+                      {producte.descripcio}
+                    </p>
+                    <p className="fw-bold text-success mb-2">{producte.preu.toFixed(2)}€</p>
+                    <div className="d-flex gap-2">
+                      <a href="#" className="btn btn-outline-dark flex-grow-1">
+                        Ver Catálogo
+                      </a>
+                      <button
+                        className="btn btn-success"
+                        onClick={() => afegirACistella(producte)}
+                        title="Afegir a la cistella"
+                      >
+                        🛒+
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="col">
-              <div className="card h-100 shadow-sm">
-                <img
-                  src={image2}
-                  className="card-img-top"
-                  alt="Videojuegos"
-                />
-                <div className="card-body d-flex flex-column">
-                  <h5 className="card-title">Videojuegos</h5>
-                  <p className="card-text flex-grow-1">
-                    Juegos nuevos, clásicos y ediciones especiales para todas las plataformas.
-                  </p>
-                  <a href="#" className="btn btn-outline-dark mt-auto">
-                    Ver Catálogo
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="col">
-              <div className="card h-100 shadow-sm">
-                <img
-                  src={image3}
-                  className="card-img-top"
-                  alt="Figuras"
-                />
-                <div className="card-body d-flex flex-column">
-                  <h5 className="card-title">Figuras Coleccionables</h5>
-                  <p className="card-text flex-grow-1">
-                    Figuras de anime, videojuegos, Marvel, Star Wars y más.
-                  </p>
-                  <a href="#" className="btn btn-outline-dark mt-auto">
-                    Ver Catálogo
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="col">
-              <div className="card h-100 shadow-sm">
-                <img
-                  src={image4}
-                  className="card-img-top"
-                  alt="Componentes PC"
-                />
-                <div className="card-body d-flex flex-column">
-                  <h5 className="card-title">Componentes PC</h5>
-                  <p className="card-text flex-grow-1">
-                    Tarjetas gráficas, teclados mecánicos, monitores gaming y accesorios.
-                  </p>
-                  <a href="#" className="btn btn-outline-dark mt-auto">
-                    Ver Catálogo
-                  </a>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -121,6 +169,181 @@ export default function Home() {
           .card-img-top {
             height: 180px;
             object-fit: cover;
+          }
+          
+          /* Estils de la cistella */
+          .cistella-flotant {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+          }
+          
+          .cistella-flotant:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
+          }
+          
+          .cistella-icona {
+            font-size: 28px;
+          }
+          
+          .cistella-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+          }
+          
+          .cistella-panell {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e, #16213e);
+            z-index: 1001;
+            transition: right 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+          }
+          
+          .cistella-panell.oberta {
+            right: 0;
+          }
+          
+          .cistella-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+          }
+          
+          .cistella-header h4 {
+            margin: 0;
+            font-weight: bold;
+          }
+          
+          .cistella-tancar {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 18px;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+          }
+          
+          .cistella-tancar:hover {
+            background: rgba(255,255,255,0.4);
+          }
+          
+          .cistella-contingut {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            color: white;
+          }
+          
+          .cistella-buida {
+            text-align: center;
+            color: #aaa;
+            font-style: italic;
+            margin-top: 50px;
+          }
+          
+          .cistella-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            transition: background 0.3s ease;
+          }
+          
+          .cistella-item:hover {
+            background: rgba(255,255,255,0.1);
+          }
+          
+          .cistella-item-img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+          }
+          
+          .cistella-item-info {
+            flex: 1;
+          }
+          
+          .cistella-item-info h6 {
+            margin: 0 0 5px 0;
+            font-weight: bold;
+          }
+          
+          .cistella-item-info p {
+            margin: 0;
+            color: #20c997;
+            font-size: 14px;
+          }
+          
+          .cistella-item-eliminar {
+            background: rgba(220, 53, 69, 0.2);
+            border: none;
+            font-size: 18px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+          }
+          
+          .cistella-item-eliminar:hover {
+            background: rgba(220, 53, 69, 0.5);
+          }
+          
+          .cistella-total {
+            text-align: right;
+            padding: 15px 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 15px;
+            font-size: 18px;
+            color: #20c997;
+          }
+          
+          .cistella-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
           }
         `}
       </style>
