@@ -1,18 +1,27 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulación de login exitoso
-    console.log("Login attempt:", { email, password });
-    alert("✅ Login exitoso (simulado)");
-    navigate('/');
+    try {
+      const response = await api.post('/users/login', { email, password });
+
+      // Ara el backend ja retorna { message, token, user }
+      login(response.user, response.token);
+      alert("✅ Login exitós!");
+      navigate('/');
+    } catch (error) {
+      alert("❌ Error en el login: " + error.message);
+    }
   };
 
   return (

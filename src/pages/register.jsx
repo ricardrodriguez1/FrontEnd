@@ -1,24 +1,33 @@
 // src/pages/Register.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../api';
 
 export default function Register() {
-  const [name, setName] = useState('');
+  const [nombre, setNombre] = useState(''); // Cambiado a 'nombre' para coincidir con backend
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       alert("❌ Las contraseñas no coinciden");
       return;
     }
-    // Simulación de registro exitoso
-    console.log("Registro:", { name, email, password });
-    alert("✅ Registro exitoso (simulado)");
-    navigate('/login');
+
+    try {
+      await api.post('/users/register', {
+        nombre,
+        email,
+        password
+      });
+      alert("✅ Registro exitoso!");
+      navigate('/login');
+    } catch (error) {
+      alert("❌ Error en el registro: " + error.message);
+    }
   };
 
   return (
@@ -38,8 +47,8 @@ export default function Register() {
                     id="name"
                     className="form-control"
                     placeholder="Juan Pérez"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
                     required
                   />
                 </div>

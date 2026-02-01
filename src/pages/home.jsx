@@ -1,56 +1,80 @@
 // src/pages/Home.jsx
-import { useState } from 'react';
-import image1 from './ps2.jpg';   // 👈 . = misma carpeta
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
+import { api } from '../api.js';
+import { useNavigate, Link } from 'react-router-dom';
+
+// Imatges per defecte
+import image1 from './ps2.jpg';
 import image2 from './re4.jpg';
 import image3 from './gogeta.jpg';
 import image4 from './4070.jpg';
 
 export default function Home() {
-  // Estat per controlar si la cistella està desplegada o plegada
-  const [cistella, setCistella] = useState(false);
-  // Estat per emmagatzemar els productes afegits a la cistella
-  const [productesAfegits, setProductesAfegits] = useState([]);
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
-  // Llista de productes disponibles
-  const productes = [
-    { id: 1, nom: 'Videoconsolas', preu: 499.99, imatge: image1, descripcio: 'PS5, Xbox Series X|S, Nintendo Switch y más consolas de última generación.' },
-    { id: 2, nom: 'Videojuegos', preu: 69.99, imatge: image2, descripcio: 'Juegos nuevos, clásicos y ediciones especiales para todas las plataformas.' },
-    { id: 3, nom: 'Figuras Coleccionables', preu: 89.99, imatge: image3, descripcio: 'Figuras de anime, videojuegos, Marvel, Star Wars y más.' },
-    { id: 4, nom: 'Componentes PC', preu: 599.99, imatge: image4, descripcio: 'Tarjetas gráficas, teclados mecánicos, monitores gaming y accesorios.' },
+  const [cistella, setCistella] = useState(false);
+  const [productesAfegits, setProductesAfegits] = useState([]);
+  const [productes, setProductes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Productes de reserva (fallback) amb enllaços al catàleg
+  const productesFallback = [
+    { _id: 'f1', nombre: 'Videoconsolas', precio: 499.99, descripcion: 'PS5, Xbox Series X|S, Nintendo Switch y más consolas de última generación.', imagen_url: image1, catalogo_url: '/catalogo/videoconsolas' },
+    { _id: 'f2', nombre: 'Videojuegos', precio: 69.99, descripcion: 'Juegos nuevos, clásicos y ediciones especiales para todas las plataformas.', imagen_url: image2, catalogo_url: '/catalogo/videojuegos' },
+    { _id: 'f3', nombre: 'Figuras Coleccionables', precio: 89.99, descripcion: 'Figuras de anime, videojuegos, Marvel, Star Wars y más.', imagen_url: image3, catalogo_url: '/catalogo/figuras' },
+    { _id: 'f4', nombre: 'Componentes PC', precio: 599.99, descripcion: 'Tarjetas gráficas, teclados mecánicos, monitores gaming y accesorios.', imagen_url: image4, catalogo_url: '/catalogo/componentes' },
   ];
 
-  // Funció per afegir un producte a la cistella
+  // Carregar productes (usem fallback per assegurar les imatges locals)
+  useEffect(() => {
+    // Utilitzem directament els productes de fallback per mostrar les imatges correctes
+    setProductes(productesFallback);
+    setLoading(false);
+  }, []);
+
+  // Afegir producte a la cistella
   const afegirACistella = (producte) => {
-    const existeix = productesAfegits.find(p => p.id === producte.id);
+    const existeix = productesAfegits.find(p => p._id === producte._id);
     if (existeix) {
-      // Si ja existeix, incrementem la quantitat
       setProductesAfegits(productesAfegits.map(p =>
-        p.id === producte.id ? { ...p, quantitat: p.quantitat + 1 } : p
+        p._id === producte._id ? { ...p, quantitat: p.quantitat + 1 } : p
       ));
     } else {
-      // Si no existeix, l'afegim amb quantitat 1
       setProductesAfegits([...productesAfegits, { ...producte, quantitat: 1 }]);
     }
   };
 
-  // Funció per eliminar un producte de la cistella
+  // Eliminar producte de la cistella
   const eliminarDeCistella = (id) => {
-    setProductesAfegits(productesAfegits.filter(p => p.id !== id));
+    setProductesAfegits(productesAfegits.filter(p => p._id !== id));
   };
 
-  // Funció per calcular el total de la cistella
+  // Finalitzar compra - Navegar a la pàgina de Checkout
+  const finalitzarCompra = () => {
+    if (productesAfegits.length === 0) {
+      alert("La cistella està buida");
+      return;
+    }
+    // Tanquem la cistella i naveguem a checkout passant els productes
+    setCistella(false);
+    navigate('/checkout', { state: { cartItems: productesAfegits } });
+  };
+
+  // Calcular total
   const calcularTotal = () => {
-    return productesAfegits.reduce((total, p) => total + (p.preu * p.quantitat), 0).toFixed(2);
+    return productesAfegits.reduce((total, p) => total + (p.precio * p.quantitat), 0).toFixed(2);
   };
 
-  // Funció per obtenir el nombre total d'articles
+  // Total articles
   const totalArticles = () => {
     return productesAfegits.reduce((total, p) => total + p.quantitat, 0);
   };
 
   return (
     <>
-      {/* Botó flotant de la cistella */}
+      {/* Botó flotant cistella */}
       <div className="cistella-flotant" onClick={() => setCistella(!cistella)}>
         <span className="cistella-icona">🛒</span>
         {totalArticles() > 0 && (
@@ -58,7 +82,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Panell de la cistella desplegable */}
+      {/* Panell cistella */}
       <div className={`cistella-panell ${cistella ? 'oberta' : ''}`}>
         <div className="cistella-header">
           <h4>🛒 Cistella de Compra</h4>
@@ -71,16 +95,13 @@ export default function Home() {
           ) : (
             <>
               {productesAfegits.map((producte) => (
-                <div key={producte.id} className="cistella-item">
-                  <img src={producte.imatge} alt={producte.nom} className="cistella-item-img" />
+                <div key={producte._id} className="cistella-item">
+                  <img src={producte.imagen_url || image1} alt={producte.nombre} className="cistella-item-img" />
                   <div className="cistella-item-info">
-                    <h6>{producte.nom}</h6>
-                    <p>{producte.preu.toFixed(2)}€ x {producte.quantitat}</p>
+                    <h6>{producte.nombre}</h6>
+                    <p>{(producte.precio || 0).toFixed(2)}€ x {producte.quantitat}</p>
                   </div>
-                  <button
-                    className="cistella-item-eliminar"
-                    onClick={() => eliminarDeCistella(producte.id)}
-                  >
+                  <button className="cistella-item-eliminar" onClick={() => eliminarDeCistella(producte._id)}>
                     🗑️
                   </button>
                 </div>
@@ -88,7 +109,7 @@ export default function Home() {
               <div className="cistella-total">
                 <strong>Total: {calcularTotal()}€</strong>
               </div>
-              <button className="btn btn-success w-100 mt-2">
+              <button className="btn btn-success w-100 mt-2" onClick={finalitzarCompra}>
                 Finalitzar Compra
               </button>
             </>
@@ -96,7 +117,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Overlay quan la cistella està oberta */}
+      {/* Overlay */}
       {cistella && <div className="cistella-overlay" onClick={() => setCistella(false)}></div>}
 
       {/* Hero Section */}
@@ -116,38 +137,42 @@ export default function Home() {
       <section className="py-5" id="categorias">
         <div className="container">
           <h2 className="text-center mb-5 fw-bold">Nuestras Categorías</h2>
-          <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            {productes.map((producte) => (
-              <div className="col" key={producte.id}>
-                <div className="card h-100 shadow-sm">
-                  <img
-                    src={producte.imatge}
-                    className="card-img-top"
-                    alt={producte.nom}
-                  />
-                  <div className="card-body d-flex flex-column">
-                    <h5 className="card-title">{producte.nom}</h5>
-                    <p className="card-text flex-grow-1">
-                      {producte.descripcio}
-                    </p>
-                    <p className="fw-bold text-success mb-2">{producte.preu.toFixed(2)}€</p>
-                    <div className="d-flex gap-2">
-                      <a href="#" className="btn btn-outline-dark flex-grow-1">
-                        Ver Catálogo
-                      </a>
-                      <button
-                        className="btn btn-success"
-                        onClick={() => afegirACistella(producte)}
-                        title="Afegir a la cistella"
-                      >
-                        🛒+
-                      </button>
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-success" role="status">
+                <span className="visually-hidden">Cargando...</span>
+              </div>
+            </div>
+          ) : (
+            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+              {productes.map((producte) => (
+                <div className="col" key={producte._id}>
+                  <div className="card h-100 shadow-sm">
+                    <img
+                      src={producte.imagen_url || image1}
+                      className="card-img-top"
+                      alt={producte.nombre}
+                    />
+                    <div className="card-body d-flex flex-column">
+                      <h5 className="card-title">{producte.nombre}</h5>
+                      <p className="card-text flex-grow-1">{producte.descripcion}</p>
+                      <p className="fw-bold text-success mb-2">{(producte.precio || 0).toFixed(2)}€</p>
+                      <div className="d-flex gap-2">
+                        <Link to={producte.catalogo_url || '#'} className="btn btn-outline-dark flex-grow-1">Ver Catálogo</Link>
+                        <button
+                          className="btn btn-success"
+                          onClick={() => afegirACistella(producte)}
+                          title="Afegir a la cistella"
+                        >
+                          🛒+
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -171,7 +196,6 @@ export default function Home() {
             object-fit: cover;
           }
           
-          /* Estils de la cistella */
           .cistella-flotant {
             position: fixed;
             top: 20px;
