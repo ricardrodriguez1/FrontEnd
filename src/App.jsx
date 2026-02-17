@@ -12,6 +12,7 @@ export default function App() {
         <div className="container">
           <Link to="/" className="navbar-brand fw-bold">BossFightStore</Link>
           <div className="d-flex gap-2 align-items-center">
+            <Link to="/catalogo" className="btn btn-outline-success btn-sm">📦 Catàleg</Link>
             {!isAuthenticated ? (
               <>
                 <Link to="/login" className="btn btn-outline-light btn-sm">Login</Link>

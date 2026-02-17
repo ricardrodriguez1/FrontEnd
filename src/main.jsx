@@ -8,6 +8,7 @@ import Login from './pages/login.jsx';
 import Register from './pages/register.jsx';
 import Checkout from './pages/Checkout.jsx';
 import Catalogo from './pages/Catalogo.jsx';
+import ProducteDetall from './pages/ProducteDetall.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -20,7 +21,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="checkout" element={<Checkout />} />
+            <Route path="catalogo" element={<Catalogo />} />
             <Route path="catalogo/:categoria" element={<Catalogo />} />
+            <Route path="producte/:id" element={<ProducteDetall />} />
           </Route>
         </Routes>
       </BrowserRouter>
