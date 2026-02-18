@@ -3,188 +3,291 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 
+// Importem totes les imatges locals
+import ps2Img from './ps2.jpg';
+import ps5Img from './ps5.jpg';
+import ps5DigitalImg from './ps5 digital.jpg';
+import seriesXImg from './series x.jpg';
+import seriesSImg from './series s.jpg';
+import nintendoLiteImg from './nintendolite.jpg';
+import nintendoOledImg from './nintendooled.jpg';
+import steamdeckImg from './steamdeck.jpg';
+
 import re4Img from './re4.jpg';
+import baldursImg from './baldurs.jpg';
+import eldenImg from './elden.jpg';
+import finalfantasyImg from './finalfantasy.jpg';
+import godofwarImg from './godofwar.jpg';
+import hogwartsImg from './hogwarts.jpg';
+import spidermanImg from './spiderman.jpg';
+import zeldaImg from './zelda.jpg';
+
+import gogetaImg from './gogeta.jpg';
+import gokuImg from './goku.jpg';
+import vegetaImg from './vegeta.jpg';
+import luffyImg from './luffy.jpg';
+import narutoImg from './naruto.jpg';
+import erenImg from './eren.jpg';
+import saitamaImg from './saitama.jpg';
+import tanjiroImg from './tanjiro.jpg';
+
+import rtx4070Img from './4070.jpg';
+import rtx4080Img from './nvidia 4080.jpg';
+import amdRxImg from './amd rx.jpg';
+import corsairImg from './corsair.jpg';
+import intelImg from './intel.jpg';
+import logitechImg from './logitech.jpg';
+import ryzenImg from './ryzen.jpg';
+import samsungImg from './samsung.jpg';
+
+// Mapa d'imatges per nom de producte
+const productImageMap = {
+  'ps2': ps2Img,
+  'ps5 digital': ps5DigitalImg,
+  'ps5': ps5Img,
+  'playstation 5 digital': ps5DigitalImg,
+  'playstation 5': ps5Img,
+  'playstation 2': ps2Img,
+  'series x': seriesXImg,
+  'xbox series x': seriesXImg,
+  'series s': seriesSImg,
+  'xbox series s': seriesSImg,
+  'nintendo switch lite': nintendoLiteImg,
+  'switch lite': nintendoLiteImg,
+  'nintendo switch oled': nintendoOledImg,
+  'switch oled': nintendoOledImg,
+  'steam deck': steamdeckImg,
+  'steamdeck': steamdeckImg,
+  'resident evil': re4Img,
+  're4': re4Img,
+  'baldur': baldursImg,
+  'elden ring': eldenImg,
+  'final fantasy': finalfantasyImg,
+  'god of war': godofwarImg,
+  'hogwarts': hogwartsImg,
+  'spider': spidermanImg,
+  'spiderman': spidermanImg,
+  'zelda': zeldaImg,
+  'gogeta': gogetaImg,
+  'goku': gokuImg,
+  'vegeta': vegetaImg,
+  'luffy': luffyImg,
+  'naruto': narutoImg,
+  'eren': erenImg,
+  'saitama': saitamaImg,
+  'tanjiro': tanjiroImg,
+  '4070': rtx4070Img,
+  'rtx 4070': rtx4070Img,
+  '4080': rtx4080Img,
+  'rtx 4080': rtx4080Img,
+  'nvidia 4080': rtx4080Img,
+  'nvidia': rtx4080Img,
+  'corsair': corsairImg,
+  'intel': intelImg,
+  'logitech': logitechImg,
+  'ryzen': ryzenImg,
+  'samsung': samsungImg,
+  'rx 7800': amdRxImg,
+  'radeon': amdRxImg,
+  'amd rx': amdRxImg,
+};
+
+const fallbackImages = {
+  videoconsolas: ps5Img,
+  videojuegos: zeldaImg,
+  figuras: gokuImg,
+  componentes: rtx4080Img,
+};
 
 export default function ProducteDetall() {
-    const { id } = useParams();
-    const navigate = useNavigate();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-    const [producte, setProducte] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [quantitat, setQuantitat] = useState(1);
-    const [afegit, setAfegit] = useState(false);
+  const [producte, setProducte] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [quantitat, setQuantitat] = useState(1);
+  const [afegit, setAfegit] = useState(false);
 
-    useEffect(() => {
-        const fetchProducte = async () => {
-            setLoading(true);
-            try {
-                const response = await api.get(`/products/${id}`);
-                setProducte(response.data);
-            } catch (err) {
-                console.error('Error carregant producte:', err);
-                setError('No s\'ha pogut carregar el producte.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProducte();
-    }, [id]);
+  useEffect(() => {
+    const fetchProducte = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/products/${id}`);
+        setProducte(response.data);
+      } catch (err) {
+        console.error('Error carregant producte:', err);
+        setError('No s\'ha pogut carregar el producte.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducte();
+  }, [id]);
 
-    const getImgSrc = () => {
-        if (producte?.imagen_url && producte.imagen_url.startsWith('http')) {
-            return producte.imagen_url;
+  const getImgSrc = () => {
+    // Primer: cercar imatge local pel nom del producte
+    const nom = (producte?.nombre || '').toLowerCase();
+    for (const [key, img] of Object.entries(productImageMap)) {
+      if (nom.includes(key)) {
+        return img;
+      }
+    }
+    // Segon: si no hi ha match local, intentar URL HTTP
+    if (producte?.imagen_url && producte.imagen_url.startsWith('http')) {
+      return producte.imagen_url;
+    }
+    // Tercer: fallback per categoria
+    return fallbackImages[producte?.categoria] || re4Img;
+  };
+
+  const afegirAlCarret = () => {
+    // Guardar al carrito global via navigate con state
+    setAfegit(true);
+    setTimeout(() => {
+      navigate('/checkout', {
+        state: {
+          cartItems: [{
+            _id: producte._id,
+            nombre: producte.nombre,
+            precio: producte.precio,
+            imagen_url: producte.imagen_url,
+            quantitat: quantitat,
+          }]
         }
-        return re4Img;
-    };
+      });
+    }, 800);
+  };
 
-    const afegirAlCarret = () => {
-        // Guardar al carrito global via navigate con state
-        setAfegit(true);
-        setTimeout(() => {
-            navigate('/checkout', {
-                state: {
-                    cartItems: [{
-                        _id: producte._id,
-                        nombre: producte.nombre,
-                        precio: producte.precio,
-                        imagen_url: producte.imagen_url,
-                        quantitat: quantitat,
-                    }]
-                }
-            });
-        }, 800);
-    };
+  // Color per categoria
+  const categoriaColors = {
+    videoconsolas: '#2196F3',
+    videojuegos: '#4CAF50',
+    figuras: '#FF9800',
+    componentes: '#9C27B0',
+  };
 
-    // Color per categoria
-    const categoriaColors = {
-        videoconsolas: '#2196F3',
-        videojuegos: '#4CAF50',
-        figuras: '#FF9800',
-        componentes: '#9C27B0',
-    };
+  const categoriaNames = {
+    videoconsolas: 'Videoconsoles',
+    videojuegos: 'Videojocs',
+    figuras: 'Figures',
+    componentes: 'Components PC',
+  };
 
-    const categoriaNames = {
-        videoconsolas: 'Videoconsoles',
-        videojuegos: 'Videojocs',
-        figuras: 'Figures',
-        componentes: 'Components PC',
-    };
-
-    if (loading) {
-        return (
-            <div className="text-center py-5" style={{ background: '#f8f9fa', minHeight: '80vh' }}>
-                <div className="spinner-border text-success" role="status" style={{ width: '3rem', height: '3rem' }}>
-                    <span className="visually-hidden">Carregant...</span>
-                </div>
-                <p className="mt-3 text-muted">Carregant producte...</p>
-            </div>
-        );
-    }
-
-    if (error || !producte) {
-        return (
-            <div className="text-center py-5" style={{ background: '#f8f9fa', minHeight: '80vh' }}>
-                <h3 className="text-danger">❌ {error || 'Producte no trobat'}</h3>
-                <Link to="/catalogo" className="btn btn-outline-success mt-3">← Tornar al catàleg</Link>
-            </div>
-        );
-    }
-
-    const color = categoriaColors[producte.categoria] || '#1a1a2e';
-
+  if (loading) {
     return (
-        <>
-            {/* Breadcrumb header */}
-            <section style={{ background: `linear-gradient(135deg, ${color}, #1a1a2e)`, padding: '1.5rem 0' }}>
-                <div className="container">
-                    <nav aria-label="breadcrumb">
-                        <ol className="breadcrumb mb-0" style={{ background: 'transparent' }}>
-                            <li className="breadcrumb-item"><Link to="/" style={{ color: 'rgba(255,255,255,0.7)' }}>Inici</Link></li>
-                            <li className="breadcrumb-item">
-                                <Link to={`/catalogo/${producte.categoria}`} style={{ color: 'rgba(255,255,255,0.7)' }}>
-                                    {categoriaNames[producte.categoria] || producte.categoria}
-                                </Link>
-                            </li>
-                            <li className="breadcrumb-item active text-white">{producte.nombre}</li>
-                        </ol>
-                    </nav>
+      <div className="text-center py-5" style={{ background: '#f8f9fa', minHeight: '80vh' }}>
+        <div className="spinner-border text-success" role="status" style={{ width: '3rem', height: '3rem' }}>
+          <span className="visually-hidden">Carregant...</span>
+        </div>
+        <p className="mt-3 text-muted">Carregant producte...</p>
+      </div>
+    );
+  }
+
+  if (error || !producte) {
+    return (
+      <div className="text-center py-5" style={{ background: '#f8f9fa', minHeight: '80vh' }}>
+        <h3 className="text-danger">❌ {error || 'Producte no trobat'}</h3>
+        <Link to="/catalogo" className="btn btn-outline-success mt-3">← Tornar al catàleg</Link>
+      </div>
+    );
+  }
+
+  const color = categoriaColors[producte.categoria] || '#1a1a2e';
+
+  return (
+    <>
+      {/* Breadcrumb header */}
+      <section style={{ background: `linear-gradient(135deg, ${color}, #1a1a2e)`, padding: '1.5rem 0' }}>
+        <div className="container">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb mb-0" style={{ background: 'transparent' }}>
+              <li className="breadcrumb-item"><Link to="/" style={{ color: 'rgba(255,255,255,0.7)' }}>Inici</Link></li>
+              <li className="breadcrumb-item">
+                <Link to={`/catalogo/${producte.categoria}`} style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  {categoriaNames[producte.categoria] || producte.categoria}
+                </Link>
+              </li>
+              <li className="breadcrumb-item active text-white">{producte.nombre}</li>
+            </ol>
+          </nav>
+        </div>
+      </section>
+
+      {/* Detall del producte */}
+      <section className="detall-section">
+        <div className="container">
+          <div className="detall-grid">
+            {/* Imatge */}
+            <div className="detall-img-wrapper">
+              <img
+                src={getImgSrc()}
+                alt={producte.nombre}
+                onError={(e) => { e.target.src = fallbackImages[producte?.categoria] || re4Img; }}
+              />
+              <span className="detall-categoria-badge" style={{ backgroundColor: color }}>
+                {categoriaNames[producte.categoria] || producte.categoria}
+              </span>
+            </div>
+
+            {/* Info */}
+            <div className="detall-info">
+              <h1 className="detall-title">{producte.nombre}</h1>
+
+              <div className="detall-price-row">
+                <span className="detall-price">{producte.precio.toFixed(2)}€</span>
+                {producte.stock > 0 ? (
+                  <span className="detall-stock-ok">✓ En stock ({producte.stock} unitats)</span>
+                ) : (
+                  <span className="detall-stock-out">✕ Esgotat</span>
+                )}
+              </div>
+
+              <p className="detall-desc">{producte.descripcion}</p>
+
+              <div className="detall-specs">
+                <div className="spec-item">
+                  <span className="spec-label">Categoria</span>
+                  <span className="spec-value">{categoriaNames[producte.categoria] || producte.categoria}</span>
                 </div>
-            </section>
-
-            {/* Detall del producte */}
-            <section className="detall-section">
-                <div className="container">
-                    <div className="detall-grid">
-                        {/* Imatge */}
-                        <div className="detall-img-wrapper">
-                            <img
-                                src={getImgSrc()}
-                                alt={producte.nombre}
-                                onError={(e) => { e.target.src = re4Img; }}
-                            />
-                            <span className="detall-categoria-badge" style={{ backgroundColor: color }}>
-                                {categoriaNames[producte.categoria] || producte.categoria}
-                            </span>
-                        </div>
-
-                        {/* Info */}
-                        <div className="detall-info">
-                            <h1 className="detall-title">{producte.nombre}</h1>
-
-                            <div className="detall-price-row">
-                                <span className="detall-price">{producte.precio.toFixed(2)}€</span>
-                                {producte.stock > 0 ? (
-                                    <span className="detall-stock-ok">✓ En stock ({producte.stock} unitats)</span>
-                                ) : (
-                                    <span className="detall-stock-out">✕ Esgotat</span>
-                                )}
-                            </div>
-
-                            <p className="detall-desc">{producte.descripcion}</p>
-
-                            <div className="detall-specs">
-                                <div className="spec-item">
-                                    <span className="spec-label">Categoria</span>
-                                    <span className="spec-value">{categoriaNames[producte.categoria] || producte.categoria}</span>
-                                </div>
-                                <div className="spec-item">
-                                    <span className="spec-label">Referència</span>
-                                    <span className="spec-value" style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{producte._id}</span>
-                                </div>
-                            </div>
-
-                            {/* Quantitat + Botó */}
-                            {producte.stock > 0 && (
-                                <div className="detall-actions">
-                                    <div className="quantitat-selector">
-                                        <button onClick={() => setQuantitat(Math.max(1, quantitat - 1))}>−</button>
-                                        <span>{quantitat}</span>
-                                        <button onClick={() => setQuantitat(Math.min(producte.stock, quantitat + 1))}>+</button>
-                                    </div>
-                                    <button
-                                        className="btn-comprar"
-                                        style={{ backgroundColor: color }}
-                                        onClick={afegirAlCarret}
-                                        disabled={afegit}
-                                    >
-                                        {afegit ? '✓ Afegit! Redirigint...' : `🛒 Comprar (${(producte.precio * quantitat).toFixed(2)}€)`}
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Tornar */}
-                            <div className="detall-back">
-                                <Link to={`/catalogo/${producte.categoria}`} className="btn btn-outline-dark">
-                                    ← Tornar a {categoriaNames[producte.categoria] || 'catàleg'}
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
+                <div className="spec-item">
+                  <span className="spec-label">Referència</span>
+                  <span className="spec-value" style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{producte._id}</span>
                 </div>
-            </section>
+              </div>
 
-            <style>{`
+              {/* Quantitat + Botó */}
+              {producte.stock > 0 && (
+                <div className="detall-actions">
+                  <div className="quantitat-selector">
+                    <button onClick={() => setQuantitat(Math.max(1, quantitat - 1))}>−</button>
+                    <span>{quantitat}</span>
+                    <button onClick={() => setQuantitat(Math.min(producte.stock, quantitat + 1))}>+</button>
+                  </div>
+                  <button
+                    className="btn-comprar"
+                    style={{ backgroundColor: color }}
+                    onClick={afegirAlCarret}
+                    disabled={afegit}
+                  >
+                    {afegit ? '✓ Afegit! Redirigint...' : `🛒 Comprar (${(producte.precio * quantitat).toFixed(2)}€)`}
+                  </button>
+                </div>
+              )}
+
+              {/* Tornar */}
+              <div className="detall-back">
+                <Link to={`/catalogo/${producte.categoria}`} className="btn btn-outline-dark">
+                  ← Tornar a {categoriaNames[producte.categoria] || 'catàleg'}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <style>{`
         .detall-section {
           background: #f8f9fa;
           padding: 3rem 0;
@@ -360,6 +463,6 @@ export default function ProducteDetall() {
           }
         }
       `}</style>
-        </>
-    );
+    </>
+  );
 }

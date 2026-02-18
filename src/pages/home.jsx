@@ -4,11 +4,11 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import { useNavigate, Link } from 'react-router-dom';
 
-// Imatges per defecte
-import image1 from './ps2.jpg';
-import image2 from './re4.jpg';
-import image3 from './gogeta.jpg';
-import image4 from './4070.jpg';
+// Imatges per defecte (una per categoria)
+import image1 from './ps5.jpg';
+import image2 from './zelda.jpg';
+import image3 from './goku.jpg';
+import image4 from './nvidia 4080.jpg';
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
