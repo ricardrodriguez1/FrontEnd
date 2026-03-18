@@ -58,7 +58,7 @@ export default function Checkout() {
                 telefono: formData.telefono,
                 metodo_pago: formData.metodoPago,
                 total: total,
-                lineas: cartItems.map(item => ({
+                productos: cartItems.map(item => ({
                     nombre_producto: item.nombre,
                     cantidad: item.quantitat,
                     precio_unitario: item.precio,
