@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { useCart } from '../context/CartContext.jsx';
 
 // Importem totes les imatges locals
 import ps2Img from './ps2.jpg';
@@ -111,12 +112,12 @@ const categoriaConfig = {
 export default function Catalogo() {
   const { categoria } = useParams();
   const navigate = useNavigate();
+  const { cart, addToCart, totalItems, totalPrice } = useCart();
 
   // Estat de productes i filtres
   const [productes, setProductes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [carret, setCarret] = useState([]);
 
   // Filtres
   const [search, setSearch] = useState('');
@@ -186,14 +187,7 @@ export default function Catalogo() {
 
   // Carret functions
   const afegirAlCarret = (producte) => {
-    const existent = carret.find(p => p._id === producte._id);
-    if (existent) {
-      setCarret(carret.map(p =>
-        p._id === producte._id ? { ...p, quantitat: p.quantitat + 1 } : p
-      ));
-    } else {
-      setCarret([...carret, { ...producte, quantitat: 1 }]);
-    }
+    addToCart(producte);
     // Mini feedback visual
     const btn = document.getElementById(`btn-${producte._id}`);
     if (btn) {
@@ -207,15 +201,8 @@ export default function Catalogo() {
   };
 
   const anarACheckout = () => {
-    if (carret.length === 0) {
-      alert("El carret està buit");
-      return;
-    }
-    navigate('/checkout', { state: { cartItems: carret } });
+    navigate('/cart');
   };
-
-  const totalCarret = carret.reduce((sum, p) => sum + (p.precio * p.quantitat), 0);
-  const totalItems = carret.reduce((sum, p) => sum + p.quantitat, 0);
 
   // Imatge local per nom del producte (prioritat sobre URLs HTTP)
   const getImgSrc = (producte) => {
@@ -338,11 +325,11 @@ export default function Catalogo() {
       </section>
 
       {/* Carret flotant */}
-      {carret.length > 0 && (
+      {cart.length > 0 && (
         <div className="carret-flotant">
           <div className="d-flex align-items-center gap-3">
             <span>🛒 {totalItems} articles</span>
-            <span className="fw-bold" style={{ color: '#20c997' }}>{totalCarret.toFixed(2)}€</span>
+            <span className="fw-bold" style={{ color: '#20c997' }}>{totalPrice.toFixed(2)}€</span>
             <button className="btn btn-success btn-sm" onClick={anarACheckout}>
               Comprar
             </button>

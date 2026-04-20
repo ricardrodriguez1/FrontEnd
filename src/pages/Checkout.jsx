@@ -1,16 +1,18 @@
 // src/pages/Checkout.jsx
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCart } from '../context/CartContext.jsx';
 import { api } from '../api.js';
+
+// Inicialitzem Stripe amb la clau pública (4.4)
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_vostra_clau_publica_aqui');
 
 export default function Checkout() {
     const navigate = useNavigate();
-    const location = useLocation();
     const { user, isAuthenticated } = useAuth();
-
-    // Rebem els productes del carret via state de la navegació
-    const cartItems = location.state?.cartItems || [];
+    const { cart, totalPrice, totalItems } = useCart();
 
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -20,9 +22,6 @@ export default function Checkout() {
         telefono: '',
         metodoPago: 'tarjeta'
     });
-
-    // Calcular total
-    const total = cartItems.reduce((sum, item) => sum + (item.precio * item.quantitat), 0);
 
     const handleInputChange = (e) => {
         setFormData({
@@ -40,16 +39,16 @@ export default function Checkout() {
             return;
         }
 
-        if (cartItems.length === 0) {
+        if (cart.length === 0) {
             alert("El carret està buit");
-            navigate('/');
+            navigate('/catalogo');
             return;
         }
 
         setLoading(true);
 
         try {
-            // Crear la comanda amb les dades del formulari
+            // 1. Crear la comanda al backend (4.2)
             const orderData = {
                 usuario: user._id || user.id,
                 direccion: formData.direccion,
@@ -57,8 +56,9 @@ export default function Checkout() {
                 codigo_postal: formData.codigoPostal,
                 telefono: formData.telefono,
                 metodo_pago: formData.metodoPago,
-                total: total,
-                productos: cartItems.map(item => ({
+                total: totalPrice,
+                productos: cart.map(item => ({
+                    producto: item._id,
                     nombre_producto: item.nombre,
                     cantidad: item.quantitat,
                     precio_unitario: item.precio,
@@ -66,171 +66,223 @@ export default function Checkout() {
                 }))
             };
 
-            await api.post('/pedidos', orderData);
+            const orderResponse = await api.post('/orders', orderData);
+            const orderId = orderResponse.data._id;
 
-            alert("🎉 Comanda realitzada amb èxit! Gràcies per la teva compra.");
-            navigate('/');
+            // 2. Si el mètode de pagament és tarjeta, procedir amb Stripe (4.3 i 4.4)
+            if (formData.metodoPago === 'tarjeta') {
+                const stripeResponse = await api.post('/checkout/create-session', {
+                    orderId: orderId, // Enviem l'ID per al Webhook
+                    products: cart.map(item => ({
+                        id: item._id,
+                        nombre: item.nombre,
+                        quantitat: item.quantitat
+                    }))
+                });
+
+                if (stripeResponse.id) {
+                    const stripe = await stripePromise;
+                    
+                    // Redirigir oficial de Stripe (4.4)
+                    const { error } = await stripe.redirectToCheckout({
+                        sessionId: stripeResponse.id
+                    });
+
+                    if (error) {
+                        throw new Error(error.message);
+                    }
+                } else {
+                    throw new Error("No s'ha pogut obtenir la sessió de pagament");
+                }
+            } else {
+                // Per altres mètodes (contrareemborsament), anar directament a success
+                navigate('/checkout/success');
+            }
+
         } catch (error) {
-            console.error("Error al crear la comanda:", error);
-            alert("✅ Comanda simulada amb èxit! (El backend no té la ruta configurada completament)");
-            navigate('/');
+            console.error("Error en el procés de compra:", error);
+            alert(`Error: ${error.message || 'S\'ha produït un error inesperat'}`);
         } finally {
             setLoading(false);
         }
     };
 
-    if (cartItems.length === 0) {
+    // ... (la resta del render es manté igual que en la versió anterior)
+
+    if (cart.length === 0) {
         return (
             <div className="container py-5 text-center">
-                <h2>El carret està buit</h2>
-                <p className="text-muted">Afegeix productes abans de fer la compra.</p>
-                <button className="btn btn-success" onClick={() => navigate('/')}>
-                    Tornar a la botiga
-                </button>
+                <div className="card shadow-sm p-5 border-0 rounded-4">
+                    <h2>El carret està buit</h2>
+                    <p className="text-muted">Afegeix productes abans de fer la compra.</p>
+                    <button className="btn btn-success rounded-pill px-4" onClick={() => navigate('/catalogo')}>
+                        Anar a la botiga
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="container py-5">
-            <h2 className="mb-4">🛒 Finalitzar Compra</h2>
+            <nav aria-label="breadcrumb" className="mb-4">
+                <ol className="breadcrumb">
+                    <li className="breadcrumb-item"><a href="#" onClick={(e) => { e.preventDefault(); navigate('/cart'); }}>Carret</a></li>
+                    <li className="breadcrumb-item active">Checkout</li>
+                </ol>
+            </nav>
 
-            <div className="row">
-                {/* Resum del carret */}
-                <div className="col-lg-5 mb-4">
-                    <div className="card shadow-sm">
-                        <div className="card-header bg-dark text-white">
-                            <h5 className="mb-0">Resum de la Comanda</h5>
+            <h2 className="mb-4 fw-bold">🛒 Finalitzar Compra</h2>
+
+            <div className="row g-4">
+                <div className="col-lg-5 order-lg-2">
+                    <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div className="card-header bg-dark text-white p-3">
+                            <h5 className="mb-0 fw-bold">Resum de la Comanda</h5>
                         </div>
-                        <div className="card-body">
-                            {cartItems.map((item, index) => (
-                                <div key={index} className="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <div className="card-body p-4">
+                            {cart.map((item, index) => (
+                                <div key={index} className="d-flex justify-content-between align-items-center mb-3">
                                     <div className="d-flex align-items-center">
-                                        <img
-                                            src={item.imagen_url}
-                                            alt={item.nombre}
-                                            style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }}
-                                            className="me-3"
-                                        />
+                                        <div className="position-relative me-3">
+                                            <img
+                                                src={item.imagen_url}
+                                                alt={item.nombre}
+                                                style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '12px' }}
+                                            />
+                                            <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary shadow-sm">
+                                                {item.quantitat}
+                                            </span>
+                                        </div>
                                         <div>
-                                            <strong>{item.nombre}</strong>
-                                            <br />
-                                            <small className="text-muted">x{item.quantitat}</small>
+                                            <h6 className="mb-0 fw-bold">{item.nombre}</h6>
+                                            <small className="text-muted">{item.precio.toFixed(2)}€ / unitat</small>
                                         </div>
                                     </div>
-                                    <span className="fw-bold">{(item.precio * item.quantitat).toFixed(2)}€</span>
+                                    <span className="fw-bold text-dark">{(item.precio * item.quantitat).toFixed(2)}€</span>
                                 </div>
                             ))}
-                            <div className="d-flex justify-content-between mt-3 pt-3 border-top">
-                                <h5>Total:</h5>
-                                <h5 className="text-success">{total.toFixed(2)}€</h5>
+                            <hr className="my-4" />
+                            <div className="d-flex justify-content-between mb-2">
+                                <span className="text-muted">Subtotal</span>
+                                <span className="fw-bold">{totalPrice.toFixed(2)}€</span>
+                            </div>
+                            <div className="d-flex justify-content-between mb-3">
+                                <span className="text-muted">Enviament</span>
+                                <span className="text-success fw-bold">Gratuït</span>
+                            </div>
+                            <div className="d-flex justify-content-between align-items-center bg-light p-3 rounded-3 mt-4">
+                                <h5 className="mb-0 fw-bold">Total</h5>
+                                <h4 className="mb-0 fw-bold text-success">{totalPrice.toFixed(2)}€</h4>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Formulari d'enviament */}
-                <div className="col-lg-7">
-                    <div className="card shadow-sm">
-                        <div className="card-header bg-success text-white">
-                            <h5 className="mb-0">Dades d'Enviament</h5>
+                <div className="col-lg-7 order-lg-1">
+                    <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div className="card-header bg-success text-white p-3">
+                            <h5 className="mb-0 fw-bold text-center">Dades d'Enviament</h5>
                         </div>
-                        <div className="card-body">
+                        <div className="card-body p-4">
                             {!isAuthenticated ? (
-                                <div className="alert alert-warning">
-                                    <strong>⚠️ Has d'iniciar sessió per completar la compra</strong>
-                                    <div className="mt-3">
-                                        <button className="btn btn-primary me-2" onClick={() => navigate('/login')}>
-                                            Iniciar Sessió
-                                        </button>
-                                        <button className="btn btn-success" onClick={() => navigate('/register')}>
-                                            Registrar-se
-                                        </button>
-                                    </div>
+                                <div className="text-center py-4">
+                                    <p className="lead mb-4">Has d'iniciar sessió per completar la compra</p>
+                                    <button className="btn btn-primary me-2 px-4 rounded-pill" onClick={() => navigate('/login')}>
+                                        Iniciar Sessió
+                                    </button>
+                                    <button className="btn btn-outline-success px-4 rounded-pill" onClick={() => navigate('/register')}>
+                                        Registrar-se
+                                    </button>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit}>
-                                    <div className="mb-3">
-                                        <label className="form-label">Direcció</label>
-                                        <input
-                                            type="text"
-                                            name="direccion"
-                                            className="form-control"
-                                            placeholder="Carrer, número, pis..."
-                                            value={formData.direccion}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="row">
-                                        <div className="col-md-6 mb-3">
-                                            <label className="form-label">Ciutat</label>
+                                    <div className="row g-3">
+                                        <div className="col-12">
+                                            <label className="form-label fw-bold small text-muted text-uppercase">Direcció d'entrega</label>
+                                            <input
+                                                type="text"
+                                                name="direccion"
+                                                className="form-control form-control-lg rounded-3 bg-light border-0"
+                                                placeholder="Carrer, número, pis..."
+                                                value={formData.direccion}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-bold small text-muted text-uppercase">Ciutat</label>
                                             <input
                                                 type="text"
                                                 name="ciudad"
-                                                className="form-control"
+                                                className="form-control form-control-lg rounded-3 bg-light border-0"
                                                 placeholder="Barcelona"
                                                 value={formData.ciudad}
                                                 onChange={handleInputChange}
                                                 required
                                             />
                                         </div>
-                                        <div className="col-md-6 mb-3">
-                                            <label className="form-label">Codi Postal</label>
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-bold small text-muted text-uppercase">Codi Postal</label>
                                             <input
                                                 type="text"
                                                 name="codigoPostal"
-                                                className="form-control"
+                                                className="form-control form-control-lg rounded-3 bg-light border-0"
                                                 placeholder="08001"
                                                 value={formData.codigoPostal}
                                                 onChange={handleInputChange}
                                                 required
                                             />
                                         </div>
+                                        <div className="col-12">
+                                            <label className="form-label fw-bold small text-muted text-uppercase">Telèfon de contacte</label>
+                                            <input
+                                                type="tel"
+                                                name="telefono"
+                                                className="form-control form-control-lg rounded-3 bg-light border-0"
+                                                placeholder="612 345 678"
+                                                value={formData.telefono}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="col-12 mt-4">
+                                            <label className="form-label fw-bold small text-muted text-uppercase">Mètode de Pagament</label>
+                                            <div className="d-grid gap-2">
+                                                <div className={`p-3 border rounded-3 d-flex align-items-center mb-2 ${formData.metodoPago === 'tarjeta' ? 'border-success bg-light' : ''}`} 
+                                                     onClick={() => setFormData({...formData, metodoPago: 'tarjeta'})}
+                                                     style={{ cursor: 'pointer' }}>
+                                                    <input type="radio" value="tarjeta" name="metodoPago" checked={formData.metodoPago === 'tarjeta'} onChange={handleInputChange} className="me-3" />
+                                                    <div>
+                                                        <div className="fw-bold">💳 Targeta de Crèdit/Dèbit</div>
+                                                        <small className="text-muted">Pagament segur via Stripe</small>
+                                                    </div>
+                                                </div>
+                                                <div className={`p-3 border rounded-3 d-flex align-items-center ${formData.metodoPago === 'contrareembolso' ? 'border-success bg-light' : ''}`}
+                                                     onClick={() => setFormData({...formData, metodoPago: 'contrareembolso'})}
+                                                     style={{ cursor: 'pointer' }}>
+                                                    <input type="radio" value="contrareembolso" name="metodoPago" checked={formData.metodoPago === 'contrareembolso'} onChange={handleInputChange} className="me-3" />
+                                                    <div>
+                                                        <div className="fw-bold">📦 Contrareemborsament</div>
+                                                        <small className="text-muted">Paga en rebre la comanda</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-
-                                    <div className="mb-3">
-                                        <label className="form-label">Telèfon</label>
-                                        <input
-                                            type="tel"
-                                            name="telefono"
-                                            className="form-control"
-                                            placeholder="612 345 678"
-                                            value={formData.telefono}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="form-label">Mètode de Pagament</label>
-                                        <select
-                                            name="metodoPago"
-                                            className="form-select"
-                                            value={formData.metodoPago}
-                                            onChange={handleInputChange}
-                                        >
-                                            <option value="tarjeta">💳 Targeta de Crèdit/Dèbit</option>
-                                            <option value="paypal">🅿️ PayPal</option>
-                                            <option value="transferencia">🏦 Transferència Bancària</option>
-                                            <option value="contrareembolso">📦 Contrareemborsament</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="d-grid gap-2">
-                                        <button type="submit" className="btn btn-success btn-lg" disabled={loading}>
+                                    <div className="d-grid gap-3 mt-5">
+                                        <button type="submit" className="btn btn-success btn-lg py-3 fw-bold rounded-3 shadow-sm" disabled={loading}>
                                             {loading ? (
                                                 <>
                                                     <span className="spinner-border spinner-border-sm me-2"></span>
                                                     Processant...
                                                 </>
                                             ) : (
-                                                <>Confirmar Compra - {total.toFixed(2)}€</>
+                                                <>Confirmar i Pagar {totalPrice.toFixed(2)}€</>
                                             )}
                                         </button>
-                                        <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/')}>
-                                            ← Tornar a la botiga
+                                        <button type="button" className="btn btn-link text-muted text-decoration-none" onClick={() => navigate('/cart')}>
+                                            ← Tornar al carret
                                         </button>
                                     </div>
                                 </form>

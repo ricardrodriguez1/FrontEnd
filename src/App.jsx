@@ -2,9 +2,11 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
+import { useCart } from './context/CartContext.jsx';
 
 export default function App() {
   const { user, logout, isAuthenticated } = useAuth();
+  const { totalItems } = useCart();
 
   return (
     <>
@@ -13,6 +15,14 @@ export default function App() {
           <Link to="/" className="navbar-brand fw-bold">BossFightStore</Link>
           <div className="d-flex gap-2 align-items-center">
             <Link to="/catalogo" className="btn btn-outline-success btn-sm">📦 Catàleg</Link>
+            <Link to="/cart" className="btn btn-outline-warning btn-sm position-relative">
+              🛒 Carret
+              {totalItems > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
             {!isAuthenticated ? (
               <>
                 <Link to="/login" className="btn btn-outline-light btn-sm">Login</Link>

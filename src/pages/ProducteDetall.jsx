@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
+import { useCart } from '../context/CartContext.jsx';
 
 // Importem totes les imatges locals
 import ps2Img from './ps2.jpg';
@@ -102,6 +103,7 @@ const fallbackImages = {
 export default function ProducteDetall() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
 
   const [producte, setProducte] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -142,20 +144,10 @@ export default function ProducteDetall() {
   };
 
   const afegirAlCarret = () => {
-    // Guardar al carrito global via navigate con state
+    addToCart(producte, quantitat);
     setAfegit(true);
     setTimeout(() => {
-      navigate('/checkout', {
-        state: {
-          cartItems: [{
-            _id: producte._id,
-            nombre: producte.nombre,
-            precio: producte.precio,
-            imagen_url: producte.imagen_url,
-            quantitat: quantitat,
-          }]
-        }
-      });
+      navigate('/cart');
     }, 800);
   };
 
