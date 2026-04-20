@@ -80,19 +80,12 @@ export default function Checkout() {
                     }))
                 });
 
-                if (stripeResponse.id) {
-                    const stripe = await stripePromise;
-                    
-                    // Redirigir oficial de Stripe (4.4)
-                    const { error } = await stripe.redirectToCheckout({
-                        sessionId: stripeResponse.id
-                    });
-
-                    if (error) {
-                        throw new Error(error.message);
-                    }
+                if (stripeResponse.url) {
+                    // Nova forma de redirigir (4.4 actualitzat per versió 2025)
+                    // stripe.redirectToCheckout ha estat eliminat en favor de redirecció directa per URL
+                    window.location.href = stripeResponse.url;
                 } else {
-                    throw new Error("No s'ha pogut obtenir la sessió de pagament");
+                    throw new Error("No s'ha pogut obtenir la URL de pagament de Stripe");
                 }
             } else {
                 // Per altres mètodes (contrareemborsament), anar directament a success
