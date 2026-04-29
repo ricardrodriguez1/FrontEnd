@@ -31,6 +31,11 @@ export default function App() {
             ) : (
               <>
                 <span className="text-white small me-2">Hola, {user?.nombre || user?.email}</span>
+                {user?.rol === 'administrador' ? (
+                  <Link to="/admin" className="btn btn-outline-info btn-sm me-2">Admin</Link>
+                ) : (
+                  <Link to="/dashboard" className="btn btn-outline-info btn-sm me-2">Mi Cuenta</Link>
+                )}
                 <button onClick={logout} className="btn btn-outline-danger btn-sm">Logout</button>
               </>
             )}
